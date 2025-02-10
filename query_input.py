@@ -1,5 +1,5 @@
 import re
-from store_embeddings import generate_embedding 
+from generate_embeddings import generate_embedding 
 
 def preprocess_query(query):
     query = query.lower()  # Convert to lowercase
@@ -13,9 +13,7 @@ def process_query():
     cleaned_query = preprocess_query(query)
     
     # Step 2: Convert query to vector embedding
-    query_embedding = generate_embedding(cleaned_query)
-    
-    print(f"Query Embedding: {query_embedding}")
+    query_embedding = generate_embedding(cleaned_query) 
     return query_embedding 
 
 
