@@ -3,7 +3,7 @@ import psycopg2
 import numpy as np
 from generate_embeddings import generate_embedding
 from query_input import process_query
-from config import SUPERSET_URL, USERNAME, PASSWORD, DB_CONFIG
+from config import SUPERSET_URL, USERNAME, PASSWORD, DB_CONFIG, SECRET_KEY
 
 
 # Authenticate with Superset API
@@ -24,7 +24,7 @@ def get_superset_token():
         if "sub" in decoded_token and not isinstance(decoded_token["sub"], str):
             print(f"⚠ Warning: 'sub' is not a string! Found type: {type(decoded_token['sub'])}")
             decoded_token["sub"] = str(decoded_token["sub"])  # Convert it to a string
-            token = jwt.encode(decoded_token, key="wN9Z-V3cPFHtV2rVAo4JbUud0VYAX_NvDbkq9b4llUY", algorithm="HS256")  # Re-encode token (only for debugging)
+            token = jwt.encode(decoded_token, key=SECRET_KEY, algorithm="HS256")  # Re-encode token (only for debugging)
 
         print(f"✅ Superset token: {token[:10]}...")  
         return token  
