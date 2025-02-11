@@ -87,7 +87,8 @@ def store_embedding(chart_id, chart_name, vector):
 
 
 # Find similar charts using vector similarity search
-def find_similar_charts(vector, top_k=5):
+# Find similar charts using vector similarity search
+def find_similar_charts(vector, top_k=3, threshold=0.5):
     conn = psycopg2.connect(**DB_CONFIG)
     cur = conn.cursor()
 
@@ -99,12 +100,17 @@ def find_similar_charts(vector, top_k=5):
         FROM chart_embeddings
         ORDER BY similarity DESC
         LIMIT %s
-    """, (vector_str, top_k))  # ✅ Ensure `vector` type conversion
+    """, (vector_str, top_k))
 
     results = cur.fetchall()
     cur.close()
     conn.close()
-    return results
+
+    # Filter results based on threshold
+    filtered_results = [chart for chart in results if chart[2] >= threshold]
+
+    return filtered_results
+
 
 
 # Main Execution
@@ -130,9 +136,13 @@ def main():
     test_vector = process_query()
     similar_charts = find_similar_charts(test_vector)
 
-    print("\n🔍 Similar Charts:")
-    for chart in similar_charts:
-        print(f"➡ {chart[1]} (ID: {chart[0]}, Similarity: {chart[2]:.4f})")
+    
+    if similar_charts:
+        print("\n🔍 Similar Charts:")
+        for chart in similar_charts:
+            print(f"➡ {chart[1]} (ID: {chart[0]}, Similarity: {chart[2]:.4f})")
+    else:
+        print("❌ No charts found with similarity ≥ 0.9")
 
 if __name__ == "__main__":
     main()
