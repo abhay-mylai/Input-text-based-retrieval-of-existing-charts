@@ -1,6 +1,8 @@
 import psycopg2
 import numpy as np
-from config import DB_CONFIG
+import requests
+from config import DB_CONFIG, SUPERSET_URL
+from superset_client import get_chart_permalink
 
 # Store chart embeddings in PostgreSQL (pgvector)
 def store_embedding(chart_id, chart_name, vector):
@@ -16,7 +18,6 @@ def store_embedding(chart_id, chart_name, vector):
         )
     """)
 
-
     # Insert or update embedding
     cur.execute("""
         INSERT INTO chart_embeddings (chart_id, chart_name, embedding)
@@ -28,14 +29,11 @@ def store_embedding(chart_id, chart_name, vector):
     cur.close()
     conn.close()
 
-    
 
-
-def find_similar_charts(vector, top_k=3, threshold=0.5):
+def find_similar_charts(vector, token, top_k=3, threshold=0.2):
     conn = psycopg2.connect(**DB_CONFIG)
     cur = conn.cursor()
 
-    # Convert numpy array to pgvector format (comma-separated)
     vector_str = "[" + ",".join(map(str, vector)) + "]"
 
     cur.execute("""
@@ -49,7 +47,15 @@ def find_similar_charts(vector, top_k=3, threshold=0.5):
     cur.close()
     conn.close()
 
-    # Filter results based on threshold
-    filtered_results = [chart for chart in results if chart[2] >= threshold]
+    similar_charts = []
+    for chart_id, chart_name, similarity in results:
+        if similarity >= threshold:
+            permalink = get_chart_permalink(chart_id, token)  # Fetch correct permalink
+            
+            # If Superset API fails, generate fallback URL
+            if not permalink:
+                permalink = f"{SUPERSET_URL}/superset/explore/?slice_id={chart_id}"
 
-    return filtered_results
+            similar_charts.append((chart_id, chart_name, similarity, permalink))
+
+    return similar_charts

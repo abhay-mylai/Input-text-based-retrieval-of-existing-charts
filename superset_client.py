@@ -26,15 +26,12 @@ def get_superset_token():
 
 # Fetch all charts from Superset
 def get_charts(token):
-    charts_url = f"http://127.0.0.1:5000/api/v1/chart"
+    charts_url = f"{SUPERSET_URL}/api/v1/chart"
     headers = {"Authorization": f"Bearer {token}"}
-    
-    
     
     response = requests.get(charts_url, headers=headers)
     
     if response.status_code != 200:
-        
         return []  # Return an empty list in case of failure
     else:
         try:
@@ -43,3 +40,10 @@ def get_charts(token):
         except ValueError as e:
             print(f"Failed to parse response: {e}")
             return []  # Return an empty list if parsing fails
+
+
+
+def get_chart_permalink(chart_id, token):
+    """Fetch the correct view-only permalink for a given chart ID."""
+    # Direct URL to the chart with slice_id as query param
+    return f"{SUPERSET_URL}/superset/explore/?slice_id={chart_id}"

@@ -18,19 +18,20 @@ def main():
 
     # Example Query: Find similar charts to a given one
     while True:
-        
         test_vector = process_query()
-        similar_charts = find_similar_charts(test_vector)
+        similar_charts = find_similar_charts(test_vector, token)
         
         if similar_charts:
             print("\n🔍 Similar Charts:")
             for chart in similar_charts:
-                print(f"➡ {chart[1]} (ID: {chart[0]}, Similarity: {chart[2]:.4f})")
+                chart_id, chart_name, similarity, permalink = chart
+                print(f"➡ {chart_name} (ID: {chart_id}, Similarity: {similarity:.4f})")
+                print(f"🔗 Permalink: {permalink}\n")
         else:
-            print("❌ No charts found with similarity ≥ 0.9")
+            print("❌ No charts found with similarity ≥ 0.2")
 
         string = input("continue? (y/n): ")
-        if string == "n":
+        if string != "y":
             break
 
         print("--------------------------------\n")
