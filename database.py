@@ -5,7 +5,7 @@ from config import DB_CONFIG, SUPERSET_URL
 from superset_client import get_chart_permalink
 
 # Store chart embeddings in PostgreSQL (pgvector)
-def store_embedding(chart_id, chart_name, vector):
+def store_embedding(chart_id, chart_name, vector, last_updated):
     conn = psycopg2.connect(**DB_CONFIG)
     cur = conn.cursor()
 
@@ -14,20 +14,31 @@ def store_embedding(chart_id, chart_name, vector):
         CREATE TABLE IF NOT EXISTS chart_embeddings (
             chart_id INT PRIMARY KEY,
             chart_name TEXT,
-            embedding vector(384)  -- Using 384-dim embeddings from MiniLM
+            embedding vector(384),
+            last_updated TIMESTAMP  -- Store last updated timestamp
         )
     """)
 
-    # Insert or update embedding
+    # Check if the chart already exists and if it was updated
     cur.execute("""
-        INSERT INTO chart_embeddings (chart_id, chart_name, embedding)
-        VALUES (%s, %s, %s)
-        ON CONFLICT (chart_id) DO UPDATE SET embedding = EXCLUDED.embedding
-    """, (chart_id, chart_name, np.array(vector).tolist()))
+        SELECT last_updated FROM chart_embeddings WHERE chart_id = %s
+    """, (chart_id,))
+    
+    row = cur.fetchone()
+    
+    if row is None or row[0] < last_updated:  # If new chart or updated chart
+        cur.execute("""
+            INSERT INTO chart_embeddings (chart_id, chart_name, embedding, last_updated)
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT (chart_id) DO UPDATE 
+            SET embedding = EXCLUDED.embedding, last_updated = EXCLUDED.last_updated
+        """, (chart_id, chart_name, np.array(vector).tolist(), last_updated))
 
-    conn.commit()
+        conn.commit()
+
     cur.close()
     conn.close()
+
 
 
 def find_similar_charts(vector, token, top_k=3, threshold=0.2):
